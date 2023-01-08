@@ -1,6 +1,7 @@
 import asyncio
 import queue
 import threading
+import time
 
 from aiohttp import ClientSession, TCPConnector
 import os
@@ -10,7 +11,7 @@ import pandas as pd
 q = queue.Queue(maxsize=10000000)
 
 
-stop_worker = False
+STOP_WORKER_SIGNAL = False
 
 
 class get_item_from_queue:
@@ -49,7 +50,7 @@ def worker_save_post_list_to_excel(path_to_file_excel: str):
                     )
                 print(f"Worker done save post list of request {request_serial} to excel")
             except queue.Empty:
-                if stop_worker:
+                if STOP_WORKER_SIGNAL:
                     print("stop worker")
                     break
                 else:
@@ -106,12 +107,13 @@ async def fetch_posts(post_url):
 
 def fetch_post_in_event_loop(post_url):
     asyncio.get_event_loop().run_until_complete(fetch_posts(post_url))
-    global stop_worker
-    stop_worker = True
+    global STOP_WORKER_SIGNAL
+    STOP_WORKER_SIGNAL= True
     print("Done fetch")
 
 
 if __name__ == '__main__':
+    time_start = time.time()
     # path_to_file_excel = "post_data.xlsx"
     path_to_file_excel = "users_data.xlsx"
     if os.path.exists(path_to_file_excel):
@@ -132,3 +134,5 @@ if __name__ == '__main__':
     )
 
     q.join()
+    time_end = time.time()
+    print(f"Time execute: {time_end - time_start}")
